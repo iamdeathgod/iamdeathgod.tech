@@ -128,7 +128,6 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      opacity: 0;
       filter: drop-shadow(0 0 20px rgba(168,85,247,0.5));
     }
 
@@ -137,7 +136,6 @@
       font-size: clamp(.85rem, 2.5vw, 1.1rem);
       color: var(--muted);
       letter-spacing: .15em;
-      opacity: 0;
     }
 
     .status-badge {
@@ -147,7 +145,6 @@
       border-radius: 99px;
       background: rgba(34,197,94,0.06);
       font-size: .78rem; letter-spacing: .05em; color: #86efac;
-      opacity: 0;
     }
     .status-dot {
       width: 7px; height: 7px; border-radius: 50%;
@@ -162,7 +159,6 @@
 
     .hero-ctas {
       display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center;
-      opacity: 0;
     }
     .btn {
       font-family: 'Space Mono', monospace;
@@ -850,6 +846,7 @@ document.querySelectorAll('a, button, .tag, .project-card, .store-card').forEach
 // ═══════════════════════════════════════════════════════
 gsap.registerPlugin(ScrollTrigger);
 
+// Build letters
 const titleEl = document.getElementById('hero-title');
 'iamdeathgod'.split('').forEach(ch => {
   const span = document.createElement('span');
@@ -858,22 +855,32 @@ const titleEl = document.getElementById('hero-title');
   titleEl.appendChild(span);
 });
 
-const tl = gsap.timeline({ delay: 0.3 });
+// Force all hero elements visible immediately as fallback
+function forceHeroVisible() {
+  document.querySelectorAll('.letter').forEach(l => { l.style.opacity = '1'; l.style.transform = 'none'; });
+  ['#status-badge','#hero-sub','#hero-ctas','#scroll-hint'].forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) { el.style.opacity = '1'; el.style.transform = 'none'; }
+  });
+}
 
-tl.to('#status-badge', { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' })
-  .to('.letter', {
-    opacity: 1,
-    y: 0,
-    duration: 0.6,
-    stagger: 0.06,
-    ease: 'back.out(1.7)',
-    onStart() {
-      gsap.set('.letter', { y: 40 });
-    }
-  }, '-=0.2')
-  .to('#hero-sub', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.3')
-  .to('#hero-ctas', { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.4')
-  .to('#scroll-hint', { opacity: 0.5, duration: 0.6 }, '-=0.2');
+// Try GSAP animation, fallback after 2s
+const heroTimer = setTimeout(forceHeroVisible, 2000);
+
+try {
+  gsap.set('.letter', { opacity: 0, y: 40 });
+  gsap.set(['#status-badge','#hero-sub','#hero-ctas'], { opacity: 0, y: 20 });
+
+  const tl = gsap.timeline({ delay: 0.3, onComplete: () => clearTimeout(heroTimer) });
+  tl.to('#status-badge', { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' })
+    .to('.letter', { opacity: 1, y: 0, duration: 0.6, stagger: 0.06, ease: 'back.out(1.7)' }, '-=0.2')
+    .to('#hero-sub', { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, '-=0.3')
+    .to('#hero-ctas', { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, '-=0.4')
+    .to('#scroll-hint', { opacity: 0.5, duration: 0.6 }, '-=0.2');
+} catch(e) {
+  clearTimeout(heroTimer);
+  forceHeroVisible();
+}
 
 // ═══════════════════════════════════════════════════════
 // SCROLL REVEALS
